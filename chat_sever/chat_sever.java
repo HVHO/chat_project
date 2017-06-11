@@ -51,14 +51,12 @@ class SeverThread extends Thread{
                   help_menu();      // print sever command menu
 
                   while(true) {
-                        line = sc.next(); // line input
-                        if(line.indexOf("/list") == 0) {
-
-                        } else if (line.indexOf("/to") == 0) {
-
-                        } else if (line.indexOf("/quit") == 0) {
-
-                        } else if (line.indexOf("/help") == 0) {
+                        line = sc.nextLine(); // line input
+                        if(line.equals("/list mem")) {
+                              mem_list();
+                        } else if (line.equals("/list chat")) {
+                              chat_list();
+                        } else if (line.equals("/help")) {
                               clearScreen();
                               help_menu();
                         } else {
@@ -70,17 +68,37 @@ class SeverThread extends Thread{
                   System.out.println(e);
             }
       }
+      
+      public void mem_list() {
 
-      public void sendmsg() {
-
+            HashMap cur_hash = null;
+            clearScreen();
+            System.out.println("---------------Online members---------------");
+            synchronized (chat_room) {
+                  Iterator chat_hash = chat_room.values().iterator();
+                  while(chat_hash.hasNext()) {
+                        cur_hash = (HashMap)chat_hash.next();
+                        Iterator ids = cur_hash.keySet().iterator();
+                        while(ids.hasNext()) {
+                              System.out.println(ids.next());
+                        }
+                  }
+            }
       }
 
+      public void chat_list() {
+            Iterator it = chat_room.keySet().iterator();
+
+            clearScreen();
+            System.out.println("-------------available chat--------------");
+            while(it.hasNext()) {
+                  System.out.println(it.next());
+            }
+      }
       public void help_menu() {
             System.out.println("------------------Commands------------------");
             System.out.println("/help");
             System.out.println("/list <mem/chat>");
-            System.out.println("/to <mem_id> <message>");
-            System.out.println("/quit");
       }
 
       public void clearScreen() {
@@ -109,22 +127,22 @@ class ClientThread extends Thread{
              this.client_IP = sock.getInetAddress();
 
              try{
-                    // socket으로부터 OutputStream을 구한 뒤 OutputStreamWriter과 PrintWriter으로 변환시켜 준다.
-                    // OutputStreamWriter : charater을 byte형태 정보로 변환
-                    // PrintWriter : outputstream에 print, println등의 함수를 사용하게 해줌
-                    client_PW = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()));
-                    // socket으로부터 정보를 입력받을 버퍼리더를 구해준다.
-                    client_BR = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                  // socket으로부터 OutputStream을 구한 뒤 OutputStreamWriter과 PrintWriter으로 변환시켜 준다.
+                  // OutputStreamWriter : charater을 byte형태 정보로 변환
+                  // PrintWriter : outputstream에 print, println등의 함수를 사용하게 해줌
+                  client_PW = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()));
+                  // socket으로부터 정보를 입력받을 버퍼리더를 구해준다.
+                  client_BR = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                     
-                    login();
+                  login();
                     
                    
                     
-                    synchronized(cur_chat_room){
-                           cur_chat_room.put(this.client_ID, client_PW);
-                    }
+                  synchronized(cur_chat_room){
+                        cur_chat_room.put(this.client_ID, client_PW);
+                  }
 
-                    initFlag = true;
+                  initFlag = true;
              }catch(Exception ex){
                   System.out.println(ex);
              }
@@ -172,6 +190,9 @@ class ClientThread extends Thread{
              }
        }
 
+       // sign in/up method
+       // if user not register to sever, then sign up
+       // and already has account, then sign in
        public void login() {
             String line = null;
             String ID = null;
@@ -252,7 +273,7 @@ class ClientThread extends Thread{
 
        }
        
-       // 채팅방에 상관없이 보낼 수 있게 수정완료
+       // send whisper message to other user
        public void sendmsg(String msg){
             int start = msg.indexOf(" ") +1;
             int end = msg.indexOf(" ", start);
@@ -264,7 +285,7 @@ class ClientThread extends Thread{
             PrintWriter to_PW = null;
 
             try{
-                  synchronized ( chat_room) {
+                  synchronized (chat_room) {
                         Iterator chat_hash = chat_room.values().iterator();
                         while(chat_hash.hasNext()) {
                               cur_hash = (HashMap)chat_hash.next();
@@ -290,9 +311,8 @@ class ClientThread extends Thread{
        // 현재 id에 출력을 원하지 않을 경우를 제외하기 위해 except_id 추가
       public void broadcast(String msg, String except_id){
             synchronized(cur_chat_room){
-                  Collection collection = cur_chat_room.values();
-                           
-                  Iterator iter = collection.iterator();
+         
+                  Iterator iter = cur_chat_room.values().iterator();
                   while(iter.hasNext()){
                         PrintWriter cur_PrintWriter = (PrintWriter)iter.next();
                         if(except_id != null) {
@@ -305,8 +325,7 @@ class ClientThread extends Thread{
             }
       }
 
-      // 접속중인 모든 사용자의 list를 출력 ( 자기 자신 빼고 )
-      // 현재 채팅방에서만
+      // print online members in current chat room
       public void mem_list() {
             synchronized(chat_room) {
                   Set id_set = cur_chat_room.keySet();
@@ -323,6 +342,7 @@ class ClientThread extends Thread{
             }
       }
 
+      // print list of chat room
       public void chat_list() {
 
             synchronized(chat_room) {
@@ -338,22 +358,23 @@ class ClientThread extends Thread{
             }
       }
       
+      // make a new chat room and automatically put member to new chat room
       public void make_chat_room() {
-            clearScreen(client_PW);
             client_PW.println("------------make new chat-------------");
             client_PW.println("Enter chat name : ");
             client_PW.flush();
             String line = null;
             String ad=null;
+            PrintWriter pw=null;
             HashMap new_chat = new HashMap();
             try {
                   line = client_BR.readLine();
-                  ad=setpath(line);
-                   try{
-                	  File file = new File(ad);
-                	  fw=new FileWriter(file,true);
-                	  fw.close();
+                  try{
+                     File file = new File(System.getProperty("user.home"),line + ".txt");
+                     pw = new PrintWriter(file);
+                     
                   }catch(Exception e){System.out.println(e);}
+                  
                   synchronized(chat_room) {
                         chat_room.put(line, new_chat);
                   }
@@ -365,46 +386,51 @@ class ClientThread extends Thread{
                   synchronized(new_chat) {
                         new_chat.put(client_ID,client_PW);
                   }
+                  synchronized(new_chat) {
+                    
+                      new_chat.put(ad,pw);
+                }
                   cur_chat_room = new_chat;
-
-                  clearScreen(client_PW);
-                  client_PW.println("Entered to " + line);
-                  client_PW.flush();
             } catch (Exception e) { System.out.println(e); }
             
 
       }
 
+      // enter other chat room
       public void enter_chat_room(String line) {
-            int start = line.indexOf(" ") +1;
-            String chat_name = line.substring(start);
-            HashMap new_chat_room = null;
+          int start = line.indexOf(" ") +1;
+          String chat_name = line.substring(start);
+          HashMap new_chat_room = null;
 
-            try{
-                  if(chat_room.containsKey(chat_name)) {
-                        
-                        synchronized(chat_room) {
-                              cur_chat_room.remove(client_ID);
-                              new_chat_room = (HashMap)chat_room.get(chat_name);
-                              cur_chat_room = new_chat_room;
-                              new_chat_room.put(client_ID,client_PW);
-                        }
-                        
-                        clearScreen(client_PW);
-                        client_PW.println("Entered to " + chat_name);
-                        client_PW.flush();
-                  } else {
-                        client_PW.println("Invalid chat room");
-                        client_PW.flush();
-                  }
-            } catch (Exception e) {
-                  client_PW.println(e);
-            }
-      }
+          try{
+                if(chat_room.containsKey(chat_name)) {
+                      
+                      synchronized(chat_room) {
+                            cur_chat_room.remove(client_ID);
+                            new_chat_room = (HashMap)chat_room.get(chat_name);
+                            cur_chat_room = new_chat_room;
+                            new_chat_room.put(client_ID,client_PW);
+                      }
+                      
+                      clearScreen(client_PW);
+                      client_PW.println("Entered to " + chat_name);
+                      readchat(chat_name);
+                      client_PW.flush();
+                } else {
+                      client_PW.println("Invalid chat room");
+                      client_PW.flush();
+                }
+          } catch (Exception e) {
+                client_PW.println(e);
+          }
+    }
+
+      // file transfer
       public void file_trans() {
 
       }
 
+      // help menu
       public void help_menu() {
             
             clearScreen(client_PW);
@@ -417,42 +443,48 @@ class ClientThread extends Thread{
             client_PW.println();
             client_PW.flush();
       }
- 
- public String setpath(String filename){
-    	  this.filename=filename;
-    	  filename=String.format("%s",filename);
-    	  filepath=String.format("C:\\%s.txt",filename);
-    	  return filepath;
-      }
+
       
- public void savechat(String filename,String msg){
-    	  this.filename=filename;
-    	  String line=msg;
-    	  msg.replaceAll("\n", "\r\n");
-    	  filepath=String.format("C:\\%s.txt",filename);
-    	  try{
-    		  fw=new FileWriter(filepath);
-    		  fw.write(line);
-    		  fw.close();
-    	  }catch(Exception e){}
-      }
-      
- public void readchat(String filename){
-    	  this.filename=filename;
-    	  filepath=String.format("C:\\%s.txt",filename);
-    	  
-    	  try{
-    		  fr=new FileReader(filepath);
-        	  BufferedReader b=new BufferedReader(fr);
-        	  String line;
-        	  while((line=b.readLine())!=null){
-        		  client_PW.println(line);
-        	  }
-        	  b.close();
-    	  }catch(Exception e){}
-    	  
-    	  
-      }
+public void readchat(String filename){
+         
+      String filepath = System.getProperty("user.home") + "/" + filename +  ".txt";
+      FileReader fr = null;
+      int num = 0;
+
+      try{
+            fr = new FileReader(filepath);
+            BufferedReader b = new BufferedReader(fr);
+            String line;
+
+            
+            while((line = b.readLine())!=null) {
+                num ++;
+            }
+            
+            fr = new FileReader(filepath);
+            b = new BufferedReader(fr); 
+            
+            if(num >= 10) {
+                  for(int i = 0; i < num -10; i++)
+                        line = b.readLine();
+                  
+                  while((line = b.readLine())!=null) {
+                        client_PW.println(line);
+                        client_PW.flush();
+                  }
+                  
+            } else {
+            
+                  while((line = b.readLine())!=null) {
+                        client_PW.println(line);
+                        client_PW.flush();
+                  } 
+            }
+            
+            b.close();
+      }catch(Exception e){}    
+}
+
 
       public static void clearScreen(PrintWriter pw) {  
             pw.print("\033[H\033[2J");  
