@@ -30,7 +30,7 @@ public class chat_client{
                   sock = new Socket(ip, 10001);
                   OutputStream out = sock.getOutputStream();
                   InputStream in = sock.getInputStream();
-                  pw = new PrintWriter(new OutputStreamWriter(out),true);
+                  pw = new PrintWriter(new OutputStreamWriter(out));
                   br = new BufferedReader(new InputStreamReader(in));
                     
 
@@ -47,10 +47,7 @@ public class chat_client{
                         3. 키보드로부터 한 줄씩 입력받아 서버에 전송(/quit를 입력받기 전까지)
                   ******************************************************************/                  
                   String line = null;
-                   
-                  FileInputStream fins;
-                  DataOutputStream dous = new DataOutputStream(out);
-                  String file_path = null;
+
                    
                   while((line = keyboard.readLine()) != null){
                         if (line.equals("/file")) {
@@ -61,6 +58,7 @@ public class chat_client{
                               it.resume();
                         } else {
                               pw.println(line);
+                              pw.flush();
                               if(line.equals("/quit")){
                                     endflag = true;
                                     break;

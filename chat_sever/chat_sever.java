@@ -155,6 +155,7 @@ class ClientThread extends Thread{
                    
                   // client의 bufferedreader에서 한줄씩 받아옴
                   while((line = client_BR.readLine())!= null){
+                  //while(true){
                         // 명령어를 입력했는지 체크
                         if(line.equals("/quit"))
                               break;
@@ -272,9 +273,6 @@ class ClientThread extends Thread{
             } catch (Exception e) {
                   System.out.print(e);
             }
-            
-
-
       }
        
       public void whisper(String line) {
