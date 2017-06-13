@@ -26,7 +26,7 @@ public class chat_sever {
                   // Sever에서 명령어를 처리하기 위한 Thread 생성
                   SeverThread sever = new SeverThread(chat_room);
                   sever.start();
-                  // client로 연결을 수용하는것을 영원히 반복
+                  //client로 연결을 수용하는것을 영원히 반복
                   while(true){
                         Socket sock = server.accept();
                         ClientThread client = new ClientThread(sock, chat_room, open_chat, mem_id);
@@ -116,7 +116,6 @@ class ClientThread extends Thread{
        private HashMap cur_chat_room;    // 현재 접속중인 멤버의 Hash map, key : ID, value : outputstream
        private HashMap chat_room;   // key : client_ID, value : chat_room_ID
        private HashMap mem_id;      // key : client_ID, value : password
-       private boolean initFlag = false;  // client에서 연결을 종료했는지 확인하기 위한 변수
        private InetAddress client_IP;   // Client의 inetaddress 구조체
 
        // 생성자
@@ -138,12 +137,11 @@ class ClientThread extends Thread{
                     
                   login();
                    
-                    
                   synchronized(cur_chat_room){
                         cur_chat_room.put(this.client_ID, client_PW);
                   }
 
-                  initFlag = true;
+      
             } catch (Exception ex){
                   System.out.println(ex);
             }
@@ -155,7 +153,7 @@ class ClientThread extends Thread{
                    
                   // client의 bufferedreader에서 한줄씩 받아옴
                   while((line = client_BR.readLine())!= null){
-                  //while(true){
+
                         // 명령어를 입력했는지 체크
                         if(line.equals("/quit"))
                               break;
@@ -173,10 +171,10 @@ class ClientThread extends Thread{
                               enter_chat_room(line);
                         } else if(line.indexOf("/file") == 0) {
                               file_trans(line);
-                        }else {
+                        } else {
                               broadcast(client_ID + " : " + line,client_ID);
                         }
-                    }
+                  }
 
              } catch (Exception e) {
                     System.out.println(e);

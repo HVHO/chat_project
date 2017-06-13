@@ -5,18 +5,18 @@ import java.util.*;
 public class chat_client{
        public static void main(String[] args){
             
-             Scanner sc = new Scanner(System.in);
-             String ip,id,password;
+            Scanner sc = new Scanner(System.in);
+            String ip,id,password;
             
-             Socket sock = null;
-             BufferedReader br = null;
-             PrintWriter pw = null;
-             boolean endflag = false;
+            Socket sock = null;
+            BufferedReader br = null;
+            PrintWriter pw = null;
+            boolean endflag = false;
 
-             System.out.println("--------------Chat_Client-------------");
-             System.out.print("Enter Sever IP : ");
-             ip = sc.next();
-            
+            System.out.println("--------------Chat_Client-------------");
+            System.out.print("Enter Sever IP : ");
+            ip = sc.next();
+
             try{
                   /******************************************************************
                         입력받은 ip로 10001번 포트에 접속
@@ -28,10 +28,9 @@ public class chat_client{
                   
       
                   sock = new Socket(ip, 10001);
-                  OutputStream out = sock.getOutputStream();
-                  InputStream in = sock.getInputStream();
-                  pw = new PrintWriter(new OutputStreamWriter(out));
-                  br = new BufferedReader(new InputStreamReader(in));
+      
+                  pw = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()));
+                  br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                     
 
                   /******************************************************************
@@ -47,7 +46,6 @@ public class chat_client{
                         3. 키보드로부터 한 줄씩 입력받아 서버에 전송(/quit를 입력받기 전까지)
                   ******************************************************************/                  
                   String line = null;
-
                    
                   while((line = keyboard.readLine()) != null){
                         if (line.equals("/file")) {
@@ -68,7 +66,7 @@ public class chat_client{
                     }
                     System.out.println("클라이언트의 접속을 종료합니다.");
                    
-             }catch(Exception ex){
+            } catch (Exception ex){
                     if(!endflag)
                            System.out.println(ex);
              }finally{
