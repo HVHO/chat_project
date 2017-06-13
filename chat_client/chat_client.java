@@ -2,7 +2,7 @@ import java.net.*;
 import java.io.*;
 import java.util.*;
  
-public class chat_client{
+public class ChatClient{
        public static void main(String[] args){
             
              Scanner sc = new Scanner(System.in);
@@ -25,21 +25,29 @@ public class chat_client{
                         Socket으로부터 InputStream과 OutputStream을  얻어와서
                             각각 Buffered와 PrintWriter 형태로 변환시킴
                      ******************************************************************/
+                  
+      
                     sock = new Socket(ip, 10001);
-                    pw = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()));
-                    br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-                   
+                    OutputStream out = sock.getOutputStream();
+                    InputStream in = sock.getInputStream();
+                    pw = new PrintWriter(new OutputStreamWriter(out));
+                    br = new BufferedReader(new InputStreamReader(in));
+                    
+
+             
+
+
                     /******************************************************************
                      2. 키보드로부터 입력받기 위한 BufferedReader를 생성한 후,
                      서버로부터 전달된 문자열을 모니터에 출력하는 InputThread 객체를 생성
                      ******************************************************************/                  
                     BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in));
                    
-                    /*System.out.print("Enter your ID : ");
+                    System.out.print("Enter your ID : ");
                     id = sc.next();
                     // 사용자의 id를 서버로 전송한다
                     pw.println(id);
-                    pw.flush();*/
+                    pw.flush();
                    
                     InputThread it = new InputThread(sock, br);
                     it.start();
@@ -49,13 +57,81 @@ public class chat_client{
                      ******************************************************************/                  
                     String line = null;
                    
+                   FileInputStream fins;
+                   DataOutputStream dous = new DataOutputStream(out);
+                   String file_path = null;
+                   
                     while((line = keyboard.readLine()) != null){
+                        if (line.indexOf("/file") == 0)
+                         {
+                           
+                           int start = line.indexOf(" ") +1; //start는 멤버 ID부터 시작하는 offset
+                           
+                           int end = line.indexOf(" ", start); //end는 file이름부터 시작하는 offset
+                             
+                           if(end!=-1)
+                                file_path = line.substring(end+1);  //띄어쓰기 바로다음부터니까 file이름
+                           
+                           //  String file_name = file_path.substring(file_path.lastIndexOf("\\"));
+                             
+                              fins = new FileInputStream(new File(file_path));
+                                
+                              byte buffer[] = new byte[1024];
+                              int len;
+                              int data = 0;
+                              
+                              
+                              pw.println("/file "+ line.substring(start, end) + " " + file_path);
+                              pw.flush();
+                              
+                              while((len=fins.read(buffer))>0)
+                                   ++data;
+                                
+                                fins.close();
+                                fins = new FileInputStream(file_path);
+                                dous.writeInt(data);
+                                dous.writeUTF(file_path);
+                                
+                                len = 0;
+                                
+                                for(; data>0; --data){
+                                   len = fins.read(buffer);
+                                   out.write(buffer, 0, len);
+                                }
+                                
+                              fins.close();
+                             
+                             
+                         }
+                        else if (line.indexOf("/yes") == 0)
+                        {
+                              DataInputStream d_ins = new DataInputStream(in);  
+                           
+                        
+                           
+                               int data = d_ins.readInt();
+                               String filename = d_ins.readUTF();
+                               File file = new File(System.getProperty("user.home") + "/" + filename);
+                               out = new FileOutputStream(file);
+                               
+                               byte[] buffer = new byte[1024];
+                               int len;
+                               
+                               for(; data>0; --data){
+                                  len = in.read(buffer);
+                                  out.write(buffer, 0, len);
+                               }
+                               out.close();
+                           
+                        }
+                        else{
                            pw.println(line);
                            pw.flush();
                            if(line.equals("/quit")){
                                  endflag = true;
-                                 break;
-                           }
+                                 break;}
+                           
+                              }
                     }
                     System.out.println("클라이언트의 접속을 종료합니다.");
                    
@@ -82,7 +158,8 @@ public class chat_client{
 BuffereadReader와 Socket 객체를 인자로 전달 받음
 ******************************************************************/
 class InputThread extends Thread{
-      
+     
+
        private Socket sock = null;
        private BufferedReader br = null;
        public InputThread(Socket sock, BufferedReader br){
@@ -95,6 +172,7 @@ class InputThread extends Thread{
        ******************************************************************/
        public void run(){
              try{
+               
                     String line = null;
                     while((line = br.readLine())!=null){
                            System.out.println(line);

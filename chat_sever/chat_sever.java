@@ -6,35 +6,37 @@ import java.util.*;
 // chat_sever class
 // 10001번 포트를 통해 클라이언트와 연결하며 hash map을 통해 클라이언트간의 outputstream을 공유함
 public class chat_sever {
-       public static void main(String[] args){
-             try{
-                    ServerSocket server = new ServerSocket(10001);
-                    System.out.println("------------------Sever init----------------.");
-                    System.out.println("Sever Host : " + InetAddress.getLocalHost().getHostName());
-                    System.out.println("Sever IP : " + InetAddress.getLocalHost().getHostAddress());
-                    System.out.println("--------------------------------------------.");
+      public static void main(String[] args){
+            try{
 
-                    // 각 채팅방의 id를 key로, 속한 채팅방 hashmap을 value로 가지고 있는 hash map.
-                    // 다중채팅방을 구현하기 위해 사용.
-                    HashMap chat_room = new HashMap();
-                    // member의 id를 key로, outputstream을 value로 가지는 hash map
-                    HashMap open_chat = new HashMap();
-                    chat_room.put("open_chat",open_chat);
-                    // member의 id를 key로, password를 value로 가지는 hash map
-                    HashMap mem_id = new HashMap();
-                    // Sever에서 명령어를 처리하기 위한 Thread 생성
-                    SeverThread sever = new SeverThread(chat_room);
-                    sever.start();
-                    // client로 연결을 수용하는것을 영원히 반복
-                    while(true){
-                           Socket sock = server.accept();
-                           ClientThread client = new ClientThread(sock, chat_room, open_chat, mem_id);
-                           client.start();
-                    }
-             }catch(Exception e){
-                    System.out.println(e);
-             }
-       }
+                  ServerSocket server = new ServerSocket(10001);
+                  System.out.println("------------------Sever init----------------.");
+                  System.out.println("Sever Host : " + InetAddress.getLocalHost().getHostName());
+                  System.out.println("Sever IP : " + InetAddress.getLocalHost().getHostAddress());
+                  System.out.println("--------------------------------------------.");
+
+                  // 각 채팅방의 id를 key로, 속한 채팅방 hashmap을 value로 가지고 있는 hash map.
+                  // 다중채팅방을 구현하기 위해 사용.
+                  HashMap chat_room = new HashMap();
+                  // member의 id를 key로, outputstream을 value로 가지는 hash map
+                  HashMap open_chat = new HashMap();
+                  chat_room.put("open_chat",open_chat);
+                  // member의 id를 key로, password를 value로 가지는 hash map
+                  HashMap mem_id = new HashMap();
+                  // Sever에서 명령어를 처리하기 위한 Thread 생성
+                  SeverThread sever = new SeverThread(chat_room);
+                  sever.start();
+                  // client로 연결을 수용하는것을 영원히 반복
+                  while(true){
+                        Socket sock = server.accept();
+                        ClientThread client = new ClientThread(sock, chat_room, open_chat, mem_id);
+                        client.start();
+                  }
+
+            }catch(Exception e){
+                  System.out.println(e);
+            }
+      }
 }
 
 class SeverThread extends Thread{
@@ -118,15 +120,15 @@ class ClientThread extends Thread{
        private InetAddress client_IP;   // Client의 inetaddress 구조체
 
        // 생성자
-       public ClientThread(Socket sock, HashMap chat_room, HashMap open_chat, HashMap mem_id){
+      public ClientThread(Socket sock, HashMap chat_room, HashMap open_chat, HashMap mem_id){
 
-             this.sock = sock;
-             this.cur_chat_room = open_chat;
-             this.chat_room = chat_room;
-             this.mem_id = mem_id;
-             this.client_IP = sock.getInetAddress();
+            this.sock = sock;
+            this.cur_chat_room = open_chat;
+            this.chat_room = chat_room;
+            this.mem_id = mem_id;
+            this.client_IP = sock.getInetAddress();
 
-             try{
+            try {
                   // socket으로부터 OutputStream을 구한 뒤 OutputStreamWriter과 PrintWriter으로 변환시켜 준다.
                   // OutputStreamWriter : charater을 byte형태 정보로 변환
                   // PrintWriter : outputstream에 print, println등의 함수를 사용하게 해줌
@@ -143,18 +145,18 @@ class ClientThread extends Thread{
                   }
 
                   initFlag = true;
-             }catch(Exception ex){
+            } catch (Exception ex){
                   System.out.println(ex);
-             }
-       }
+            }
+      }
  
-       public void run(){
-             try{
-                    String line = null;
+      public void run(){
+            try {
+                  String line = null;
                    
-                    // client의 bufferedreader에서 한줄씩 받아옴
-                    while((line = client_BR.readLine())!= null){
-                           // 명령어를 입력했는지 체크
+                  // client의 bufferedreader에서 한줄씩 받아옴
+                  while((line = client_BR.readLine())!= null){
+                        // 명령어를 입력했는지 체크
                         if(line.equals("/quit"))
                               break;
                         else if(line.indexOf("/to") == 0){
@@ -173,9 +175,10 @@ class ClientThread extends Thread{
                               broadcast(client_ID + " : " + line,client_ID);
                         }
                     }
-             }catch(Exception e){
+
+             } catch (Exception e) {
                     System.out.println(e);
-             }finally{
+             } finally {
                     // client가 접속을 종료하면 hashmap에서 삭제
                     synchronized(cur_chat_room){
                         cur_chat_room.remove(client_ID);
