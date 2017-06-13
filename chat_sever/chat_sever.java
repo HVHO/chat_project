@@ -137,7 +137,6 @@ class ClientThread extends Thread{
                   client_BR = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                     
                   login();
-                    
                    
                     
                   synchronized(cur_chat_room){
@@ -160,7 +159,7 @@ class ClientThread extends Thread{
                         if(line.equals("/quit"))
                               break;
                         else if(line.indexOf("/to") == 0){
-                              sendmsg(line);
+                              whisper(line);
                         } else if (line.indexOf("/list mem") == 0) {
                               mem_list();
                         } else if (line.indexOf("/help") == 0) {
@@ -171,7 +170,9 @@ class ClientThread extends Thread{
                               make_chat_room();
                         } else if (line.indexOf("/enter") == 0) {
                               enter_chat_room(line);
-                        } else {
+                        } else if(line.indexOf("/file") == 0) {
+                              file_trans(line);
+                        }else {
                               broadcast(client_ID + " : " + line,client_ID);
                         }
                     }
@@ -196,7 +197,7 @@ class ClientThread extends Thread{
        // sign in/up method
        // if user not register to sever, then sign up
        // and already has account, then sign in
-       public void login() {
+      public void login() {
             String line = null;
             String ID = null;
             String Password = null;
@@ -274,15 +275,20 @@ class ClientThread extends Thread{
             
 
 
-       }
+      }
        
-       // send whisper message to other user
-       public void sendmsg(String msg){
-            int start = msg.indexOf(" ") +1;
-            int end = msg.indexOf(" ", start);
+      public void whisper(String line) {
+            int start = line.indexOf(" ") +1;
+            int end = line.indexOf(" ", start);
             
-            String to = msg.substring(start, end);
-            String msg2 = msg.substring(end+1);
+            String to = line.substring(start, end);
+            String msg = line.substring(end+1);
+
+            sendmsg(to, msg);
+
+       }
+       // send whisper message to other user
+      public void sendmsg(String to, String msg){
 
             HashMap cur_hash = null;
             PrintWriter to_PW = null;
@@ -300,15 +306,13 @@ class ClientThread extends Thread{
                   }
                   
                   if(to_PW != null){
-                        to_PW.println(client_ID + "님이 다음의 귓속말을 보내셨습니다. :" +msg2);
+                        to_PW.println(msg);
                         to_PW.flush();
                   }
             } catch (Exception e) {
                   System.out.println(e);
-            }
-            
-            
-       }
+            }      
+      }
 
 
        // 현재 id에 출력을 원하지 않을 경우를 제외하기 위해 except_id 추가
@@ -429,8 +433,22 @@ class ClientThread extends Thread{
     }
 
       // file transfer
-      public void file_trans() {
+      public void file_trans(String line) {
+            
+            int to_start = line.indexOf(" ") + 1;
+            int to_end = line.indexOf(" ", to_start);
+            int ip_start = line.indexOf(" ", to_end) + 1;
+            int ip_end = line.indexOf(" ", ip_start);
+            
 
+            String to = line.substring(to_start, to_end);
+            String file_name = line.substring(to_end, ip_start - 1);
+            String ip = line.substring(ip_start, ip_end);
+            String port = line.substring(ip_end + 1);
+
+            sendmsg(to, line);
+            //sendmsg(to, client_ID + "님이 " + file_name +"을 보내셨습니다. 받으시겠습니까? <y/n>");
+            
       }
 
       // help menu
@@ -448,45 +466,45 @@ class ClientThread extends Thread{
       }
 
       
-public void readchat(String filename){
+      public void readchat(String filename) {
          
-      String filepath = System.getProperty("user.home") + "/" + filename +  ".txt";
-      FileReader fr = null;
-      int num = 0;
+            String filepath = System.getProperty("user.home") + "/" + filename +  ".txt";
+            FileReader fr = null;
+            int num = 0;
 
-      try{
-            fr = new FileReader(filepath);
-            BufferedReader b = new BufferedReader(fr);
-            String line;
+            try{
+                  fr = new FileReader(filepath);
+                  BufferedReader b = new BufferedReader(fr);
+                  String line;
 
-            
-            while((line = b.readLine())!=null) {
-                num ++;
-            }
-            
-            fr = new FileReader(filepath);
-            b = new BufferedReader(fr); 
-            
-            if(num >= 10) {
-                  for(int i = 0; i < num -10; i++)
-                        line = b.readLine();
                   
                   while((line = b.readLine())!=null) {
-                        client_PW.println(line);
-                        client_PW.flush();
+                  num ++;
                   }
                   
-            } else {
-            
-                  while((line = b.readLine())!=null) {
-                        client_PW.println(line);
-                        client_PW.flush();
-                  } 
-            }
-            
-            b.close();
-      }catch(Exception e){}    
-}
+                  fr = new FileReader(filepath);
+                  b = new BufferedReader(fr); 
+                  
+                  if(num >= 10) {
+                        for(int i = 0; i < num -10; i++)
+                              line = b.readLine();
+                        
+                        while((line = b.readLine())!=null) {
+                              client_PW.println(line);
+                              client_PW.flush();
+                        }
+                        
+                  } else {
+                  
+                        while((line = b.readLine())!=null) {
+                              client_PW.println(line);
+                              client_PW.flush();
+                        } 
+                  }
+                  
+                  b.close();
+            }catch(Exception e){}    
+      }
 
 
       public static void clearScreen(PrintWriter pw) {  
